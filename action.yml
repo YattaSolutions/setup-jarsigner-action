@@ -1,0 +1,57 @@
+name: 'Setup jarsigner'
+description: 'Prepare environment for signing jars with digicert cloud infrastructure'
+inputs:
+  auth-certificate:
+    description: 'Authentication certificate file (p12, base64 encoded)'
+    required: true
+  auth-password:
+    description: 'Authentication certificate password'
+    required: true
+  digicert-apikey:
+    description: 'API key to access signing api'
+    required: true
+
+runs:
+  using: 'composite'
+  steps:
+    - name: 'Setup environment variables'
+      shell: bash
+      env:
+        PKCS11_CFG_FILE: 'pkcs11properties.cfg'
+        AUTH_CERT_FILE: 'authentication-certificate.p12'
+        AUTH_CERT_PASSWORD: ${{ inputs.auth-password }}
+        DIGICERT_APIKEY: ${{ inputs.digicert-apikey }}
+        DIGICERT_HOST: 'https://clientauth.one.digicert.com'
+      working-directory: ${{ runner.temp }}
+      run: |
+        echo "SM_HOST=$DIGICERT_HOST" >> "$GITHUB_ENV"
+        echo "SM_API_KEY=$DIGICERT_APIKEY" >> "$GITHUB_ENV"
+        echo "SM_CLIENT_CERT_FILE=$(pwd)/$AUTH_CERT_FILE" >> "$GITHUB_ENV"
+        echo "SM_CLIENT_CERT_PASSWORD=$AUTH_CERT_PASSWORD" >> "$GITHUB_ENV"
+        echo "PKCS11_CONFIG=$(pwd)/$PKCS11_CFG_FILE" >> "$GITHUB_ENV"
+
+    - name: 'Install digicert smctl and pkcs11 library'
+      shell: bash
+      env:
+        LIBRARY_URL: 'https://one.digicert.com/signingmanager/api-ui/v1/releases/Keylockertools-linux-x64.tar.gz/download'
+      working-directory: ${{ runner.temp }}
+      run: |
+        curl -X GET $LIBRARY_URL -H "x-api-key:$SM_API_KEY" -o Keylockertools-linux-x64.tar.gz
+        tar -xvf Keylockertools-linux-x64.tar.gz
+        rm -rf $PKCS11_CONFIG && touch $PKCS11_CONFIG
+
+    - name: 'Create config file for pkcs11 library'
+      shell: bash
+      working-directory: ${{ runner.temp }}
+      run: |
+        echo "name=signingmanager" > $PKCS11_CONFIG
+        echo "library=$(find $(pwd) -name smpkcs11.so)" >> $PKCS11_CONFIG
+        echo "slotListIndex=0" >> $PKCS11_CONFIG
+        echo "$(dirname $(find $(pwd) -name smctl))" >> $GITHUB_PATH
+
+    - name: 'Setup Certificate'
+      shell: bash
+      env:
+        AUTH_CERT_B64: ${{ inputs.auth-certificate }}
+      run: |
+        echo "$AUTH_CERT_B64" | base64 --decode > $SM_CLIENT_CERT_FILE
