@@ -1,12 +1,12 @@
 # Setup jarsigner Github Action
 
-This action will prepare the workflow runner for signing jars with a code signing certificate using a pkcs11 implementation.
+This action will prepare the workflow runner to sign jars with a code signing certificate using a pkcs11 implementation.
 
 ## Inputs
 
 * `auth-certificate` - p12 user authentication certificate (Base64 encoded)
 * `auth-password` - password to access the user certificate
-* `digicert-apikey` - Key for accessing the cloud service
+* `digicert-apikey` - key to access the cloud service
 
 
 ## Available environment variable
@@ -44,7 +44,7 @@ jobs:
 ```
 
 And adapt the build using jarsigner to use the provided environment variables.
-For maven builds the related plugin configuration will be similar to this snippet. Make sure, that the alias is identical to the name given to the certificate (consider using a environment variable here).
+For maven builds, the related plugin configuration will be similar to this snippet. Make sure the alias is identical to the name given to the certificate (consider using a environment variable here).
 ```
 <pluginManagement>
   <plugins>
@@ -83,4 +83,4 @@ Now the build will use jarsigner to sign all jars in the sign goal using the pro
 
 # License
 
-The scripts and documentation in this repository are released under the [EPL-2.0](LICENSE)
+The scripts and documentation in this repository are released under the [EPL-2.0](LICENSE).
